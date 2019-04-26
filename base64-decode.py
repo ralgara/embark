@@ -5,6 +5,8 @@ dGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIHRoZSBsYXp5IGRvZw==
 
 
 import base64
+import pdb
+
 print
 print("======================")
 print("Writing a base64 encoder")
@@ -38,7 +40,21 @@ for i in range(0, len(text), 3):
     # - Shift second char 1 position left (8 bits)
     # - Leave third char in place
     # - Merge the 3 via bitwise OR (|)
-    s24bits = ord(text[i]) << 16 | ord(text[i+1]) << 8 | ord(text[i+2])
+
+    s24bits = ord(text[i]) << 16
+    padding = 0
+
+    # Encode each char in current block, catching index errors if block goes beyond
+    # end of input string. Padding variable records how many padding chars are needed
+    try:
+        s24bits = s24bits | ord(text[i+1]) << 8
+    except IndexError:
+        padding = 1
+    try:
+        s24bits = s24bits | ord(text[i+2])
+    except IndexError:
+        padding = 2
+
     print("i:{0}, block:{1}".format(
         i, text[i:i+3]))
     print("s24bits:{0:024b}".format(s24bits))
@@ -54,8 +70,13 @@ for i in range(0, len(text), 3):
         # in the lookup
         print("{0} mask:{1:24b}".format(j, mask << offset))
         index = (s24bits & ( mask << offset )) >> offset
-        # Find the index in the lookup and append the resulting character to the output
-        output += base64_lookup[index]
+
+        if padding > 0 and padding > j:
+            # Add padding = if needed
+            output += "="
+        else:
+            # Find the index in the lookup and append the resulting character to the output
+            output += base64_lookup[index]
 
     # Move input index to start of next 3-character block
     #i += 3
